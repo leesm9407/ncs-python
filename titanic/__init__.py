@@ -29,7 +29,9 @@ if __name__ == '__main__':
             app.modeling('train.csv', 'test.csv')
         if menu == '3':
             print('------ 3 머신러닝 ------ ')
+            app.learning('train.csv', 'test.csv')
         if menu == '4':
             print('------ 4 머신생성 ------ ')
+            app.submit('train.csv', 'test.csv')
         elif menu == '0':
             break

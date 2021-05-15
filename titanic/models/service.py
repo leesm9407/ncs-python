@@ -1,6 +1,6 @@
 from titanic.models.dataset import Dataset
-import pandas as pd     # 문자 처리
-import numpy as np      # 숫자 처리
+import pandas as pd
+import numpy as np
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.naive_bayes import GaussianNB
@@ -26,14 +26,13 @@ Embarked 승선한 항구명 C = 쉐브루, Q = 퀸즈타운, S = 사우스햄�
 '''
 
 class Service(object):
-
     dataset = Dataset()
 
     def new_model(self, payload):
         this = self.dataset
         this.context = './data/'
         this.fname = payload
-        return pd.read_csv(this.context+this.fname)
+        return pd.read_csv(this.context + this.fname)
 
     @staticmethod # 싱글톤 패턴
     def create_train(this):
@@ -48,16 +47,17 @@ class Service(object):
     def drop_feature(this, feature) -> object:
         this.train = this.train.drop([feature], axis = 1)
         this.test = this.test.drop([feature], axis = 1)
+
         return this
 
     @staticmethod
     def embarked_nominal(this) -> object:
-        # fillna : 빈공간을 채움
         this.train = this.train.fillna({'Embarked' : 'S'})
-        this.test = this.train.fillna({'Embarked' : 'S'})
+        this.test = this.test.fillna({'Embarked': 'S'})
 
-        this.train['Embarked'] = this.train['Embarked'].map({'S' : 1, 'C' : 2, 'Q' : 3})
-        this.test['Embarked'] = this.test['Embarked'].map({'S' : 1, 'C' : 2, 'Q' : 3})
+        this.train['Embarked'] = this.train['Embarked'].map({'S': 1, 'C': 2, 'Q' : 3})
+        this.test['Embarked'] = this.test['Embarked'].map({'S': 1, 'C': 2, 'Q': 3})
+
         return this
 
     @staticmethod
@@ -66,6 +66,7 @@ class Service(object):
         # qcut: 4개(Quarter)의 영역으로 나누고 label을 붙임
         this.train['FareBand'] = pd.qcut(this.train['Fare'], 4, labels={1, 2, 3, 4})
         this.test['FareBand'] = pd.qcut(this.test['Fare'], 4, labels={1, 2, 3, 4})
+
         return this
 
     @staticmethod
@@ -122,6 +123,7 @@ class Service(object):
         bins = [-1, 0, 5, 12, 18, 24, 35, 60, np.inf]
         labels = ['Unknown', 'Baby', 'Child', 'Teenager', 'Student', 'Young Adult', 'Adult', 'Senior']
 
+        # cut : binds로 영역을 나누고 라벨을 붙임
         train['AgeGroup'] = pd.cut(train['Age'], bins, labels=labels)
         test['AgeGroup'] = pd.cut(test['Age'], bins, labels=labels)
 
@@ -143,11 +145,53 @@ class Service(object):
         this.test = test
 
         return this
-        # cut : binds로 영역을 나누고 라벨을 붙임
 
     # 머신 러닝
     @staticmethod
     def create_k_fold():
-        return KFold(n_split=10, shuffle=True, random_state=0)
+        return KFold(n_splits=10, shuffle=True, random_state=0)
 
-    
+    def accuracy_by_dtree(self, this):
+        score = cross_val_score(DecisionTreeClassifier(),
+                                this.train,
+                                this.label,
+                                cv=KFold(n_splits=10, shuffle=True, random_state=0),
+                                n_jobs=1,
+                                scoring='accuracy')
+        return round(np.mean(score) * 100, 2)
+
+    def accuracy_by_rforest(self, this):
+        score = cross_val_score(RandomForestClassifier(),
+                                this.train,
+                                this.label,
+                                cv=KFold(n_splits=10, shuffle=True, random_state=0),
+                                n_jobs=1,
+                                scoring='accuracy')
+        return round(np.mean(score) * 100, 2)
+
+    def accuracy_by_nb(self, this):
+        score = cross_val_score(GaussianNB(),
+                                this.train,
+                                this.label,
+                                cv=KFold(n_splits=10, shuffle=True, random_state=0),
+                                n_jobs=1,
+                                scoring='accuracy')
+        return round(np.mean(score) * 100, 2)
+
+    def accuracy_by_knn(self, this):
+        score = cross_val_score(KNeighborsClassifier(),
+                                this.train,
+                                this.label,
+                                cv=KFold(n_splits=10, shuffle=True, random_state=0),
+                                n_jobs=1,
+                                scoring='accuracy')
+        return round(np.mean(score) * 100, 2)
+
+    def accuracy_by_svm(self, this):
+        score = cross_val_score(SVC(),
+                                this.train,
+                                this.label,
+                                cv=KFold(n_splits=10, shuffle=True, random_state=0),
+                                n_jobs=1,
+                                scoring='accuracy')
+        return round(np.mean(score) * 100, 2)

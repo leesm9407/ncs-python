@@ -1,6 +1,8 @@
+import pandas as pd
+
 from titanic.models.dataset import Dataset
 from titanic.models.service import Service
-import pandas as pd
+from sklearn.ensemble import RandomForestClassifier
 
 class Controller(object):
     dataset = Dataset()
@@ -8,7 +10,7 @@ class Controller(object):
 
     def modeling(self, train, test):
         service = self.service
-        this = self.preprocess(train, test)
+        this = self.preprocess(train,test)
         this.label = service.create_label(this)
         this.train = service.create_train(this)
         return this
@@ -49,9 +51,9 @@ class Controller(object):
         this = service.drop_feature(this, 'SibSp')
         this = service.drop_feature(this, 'Parch')
 
-        print(f'전처리 마감 후 컬럼: {this.train.columns}'\n)
-        print(f'train의 널 수량: {this.train.isnull().sum()}\n')
-        print(f'test 널 수량: {this.test.isnull().sum()}')
+        # print(f'전처리 마감 후 컬럼: {this.train.columns}\n')
+        # print(f'train의 널 수량: {this.train.isnull().sum()}\n')
+        # print(f'test 널 수량: {this.test.isnull().sum()}'\n)
         '''
         전처리 마감 후 컬럼: Index(['Survived', 'Pclass', 'Sex', 'Embarked', 'Title', 'AgeGroup', 'FareBand'], dtype='object')
         train의 널 수량: Survived    0
@@ -71,3 +73,20 @@ class Controller(object):
         FareBand    0
         dtype: int64
         '''
+        return this
+
+    def learning(self, train, test):
+        service = self.service
+        this = self.modeling(train, test)
+        print(f'결정트리 검증 정확도 {service.accuracy_by_dtree(this)}')
+        print(f'랜덤프리스트 검증 정확도 {service.accuracy_by_rforest(this)}')
+        print(f'나이브베이즈 검증 정확도 {service.accuracy_by_nb(this)}')
+        print(f'KNN 검증 정확도 {service.accuracy_by_knn(this)}')
+        print(f'SVM 검증 정확도 {service.accuracy_by_svm(this)}')
+
+    def submit(self, train, test):
+        this = self.modeling(train, test)
+        clf = RandomForestClassifier()
+        clf.fit(this.train, this.label)
+        prediction = clf.predict(this.test)
+        pd.DataFrame({'PassengerId': this.id, 'Survived': prediction}).to_csv('./data/submission.csv', index=False)
